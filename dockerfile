@@ -1,4 +1,4 @@
-# build v3
+# build v4 — swap t5xxl_fp16 (9.1 GB) to t5xxl_fp8 (4.5 GB) to stay under 30 min build limit
 # syntax=docker/dockerfile:1.6
 FROM runpod/worker-comfyui:5.4.1-base
 
@@ -11,7 +11,7 @@ RUN apt-get update && \
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Python dependencies
-# ─────────────────────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────────────────
 # Install insightface pre-built wheel (avoids C compilation issues) + GPU onnxruntime
 # transformers ≥ 4.49 is required by Florence2 (fixes missing is_flash_attn import)
 RUN pip install --no-cache-dir \
@@ -38,15 +38,15 @@ RUN git clone --depth 1 https://github.com/cubiq/PuLID_ComfyUI \
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — all downloads in one layer with HF cache mount
-# clip_l, t5xxl, EVA-CLIP, flux1-dev-fp8, ae (VAE), pulid, buffalo_l
+# clip_l, t5xxl_fp8 (was fp16 — saves ~4.6 GB), EVA-CLIP, flux1-dev-fp8, ae (VAE), pulid, buffalo_l
 # ─────────────────────────────────────────────────────────────────────────────
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors \
         --relative-path models/clip --filename clip_l.safetensors && \
     comfy model download \
-        --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors \
-        --relative-path models/clip --filename t5xxl_fp16.safetensors && \
+        --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors \
+        --relative-path models/clip --filename t5xxl_fp8_e4m3fn.safetensors && \
     comfy model download \
         --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_E_psz14_s4B.pt \
         --relative-path models/clip --filename EVA02_CLIP_E_psz14_s4B.pt && \
