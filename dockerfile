@@ -42,8 +42,7 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
-        /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    pip install --no-cache-dir --no-deps facenet-pytorch
+        facenet-pytorch --no-deps
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — all downloads in one layer with HF cache mount
