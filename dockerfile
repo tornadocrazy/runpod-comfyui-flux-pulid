@@ -33,9 +33,12 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
     git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
         /comfyui/custom_nodes/ComfyUI-Florence2 && \
+    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack \
+        /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
+        -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
         facenet-pytorch --no-deps
 
 # ─────────────────────────────────────────────────────────────────────────────
