@@ -1,5 +1,5 @@
-# build v4 — swap t5xxl_fp16 (9.1 GB) to t5xxl_fp8 (4.5 GB) to stay under 30 min build limit
 # syntax=docker/dockerfile:1.6
+# build v4 — swap t5xxl_fp16 (9.1 GB) to t5xxl_fp8 (4.5 GB) to stay under 30 min build limit
 FROM runpod/worker-comfyui:5.4.1-base
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -48,8 +48,9 @@ RUN pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
-        /comfyui/custom_nodes/ComfyUI-Custom-Scripts \
-        facenet-pytorch --no-deps
+        /comfyui/custom_nodes/ComfyUI-Custom-Scripts
+
+RUN pip install --no-cache-dir --no-deps facenet-pytorch
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — all downloads in one layer with HF cache mount
