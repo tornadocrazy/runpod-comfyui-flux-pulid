@@ -26,31 +26,24 @@ RUN pip install --no-cache-dir \
 # Custom nodes (all cloned in one layer)
 # ─────────────────────────────────────────────────────────────────────────────
 RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
-        /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II
-
-RUN git clone --depth 1 https://github.com/kijai/ComfyUI-KJNodes \
-        /comfyui/custom_nodes/ComfyUI-KJNodes
-
-RUN git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts \
-        /comfyui/custom_nodes/ComfyUI-Custom-Scripts
-
-RUN git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
-        /comfyui/custom_nodes/ComfyUI-Florence2
-
-RUN git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack \
+        /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II && \
+    git clone --depth 1 https://github.com/kijai/ComfyUI-KJNodes \
+        /comfyui/custom_nodes/ComfyUI-KJNodes && \
+    git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts \
+        /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
+    git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
+        /comfyui/custom_nodes/ComfyUI-Florence2 && \
+    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack \
         /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     git submodule update --init --recursive && \
-    python install.py
-
-RUN pip install --no-cache-dir \
+    python install.py && \
+    pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
-        -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
-        /comfyui/custom_nodes/ComfyUI-Custom-Scripts
-
-RUN pip install --no-cache-dir --no-deps facenet-pytorch
+        /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
+    pip install --no-cache-dir --no-deps facenet-pytorch
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — all downloads in one layer with HF cache mount
