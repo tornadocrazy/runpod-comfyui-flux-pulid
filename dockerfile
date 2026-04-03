@@ -43,6 +43,7 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
+        piexif \
         facenet-pytorch --no-deps
 
 # ─────────────────────────────────────────────────────────────────────────────
