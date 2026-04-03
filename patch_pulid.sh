@@ -96,16 +96,17 @@ sed -i "s|model = FaceAnalysis(name=name, root=INSIGHTFACE_DIR, providers=\[prov
 sed -i 's|^from facenet_pytorch import MTCNN, InceptionResnetV1|# Deferred: from facenet_pytorch import MTCNN, InceptionResnetV1  # moved to lazy import|' "$PULID_DIR/pulidflux.py"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# P6: Parallel prefetch — first loader to execute triggers all 3 in threads
+# P6: Parallel prefetch — first loader to execute triggers ALL 6 loaders
 # ─────────────────────────────────────────────────────────────────────────────
-# Appends code to pulidflux.py that wraps the 3 loader methods.
-# When ComfyUI calls any loader, it kicks off all 3 loads in parallel threads,
-# then waits only on its own. Total load time = max(individual) not sum.
+# Appends code to pulidflux.py that wraps all 6 loader methods (3 PuLID + 3
+# standard ComfyUI). When ANY loader executes, all 6 start in parallel threads.
+# Total load time = max(individual) ≈ 18s instead of sum ≈ 33s.
 cat >> "$PULID_DIR/pulidflux.py" << 'PARALLEL_PATCH'
 
-# ── P6: Parallel model prefetch ──────────────────────────────────────────────
+# ── P6: Parallel model prefetch (ALL 6 loaders) ─────────────────────────────
 import threading as _p6_threading
 from concurrent.futures import ThreadPoolExecutor as _p6_TPE
+import time as _p6_time
 
 _p6_lock = _p6_threading.Lock()
 _p6_futures = {}
@@ -113,32 +114,59 @@ _p6_cache = {}
 _p6_triggered = False
 _p6_pool = None
 
-# Save the already-patched originals
+# Save PuLID originals (already patched by P1/P2/P5)
 _p6_orig_load_model = PulidFluxModelLoader.load_model
 _p6_orig_load_insightface = PulidFluxInsightFaceLoader.load_insightface
 _p6_orig_load_eva_clip = PulidFluxEvaClipLoader.load_eva_clip
 
+# Import and save standard ComfyUI loader originals
+import nodes as _p6_nodes
+_p6_UNETLoader = _p6_nodes.NODE_CLASS_MAPPINGS.get('UNETLoader')
+_p6_DualCLIPLoader = _p6_nodes.NODE_CLASS_MAPPINGS.get('DualCLIPLoader')
+_p6_VAELoader = _p6_nodes.NODE_CLASS_MAPPINGS.get('VAELoader')
+
+_p6_orig_load_unet = _p6_UNETLoader.load_unet if _p6_UNETLoader else None
+_p6_orig_load_clip = _p6_DualCLIPLoader.load_clip if _p6_DualCLIPLoader else None
+_p6_orig_load_vae = _p6_VAELoader.load_vae if _p6_VAELoader else None
+
 def _p6_get_pool():
     global _p6_pool
     if _p6_pool is None:
-        _p6_pool = _p6_TPE(max_workers=3)
+        _p6_pool = _p6_TPE(max_workers=6)
     return _p6_pool
 
-def _p6_trigger_all(pulid_file='pulid_flux_v0.9.1.safetensors', provider='CUDA'):
-    """Kick off all 3 loads in parallel. Safe to call multiple times — only runs once."""
+def _p6_trigger_all(pulid_file='pulid_flux_v0.9.1.safetensors', provider='CUDA',
+                     unet_name='flux1-dev-fp8.safetensors', weight_dtype='default',
+                     clip_name1='t5xxl_fp8_e4m3fn.safetensors', clip_name2='clip_l.safetensors',
+                     clip_type='flux', clip_device='default',
+                     vae_name='ae.safetensors'):
+    """Kick off all 6 loads in parallel. Safe to call multiple times — only runs once."""
     global _p6_triggered
     with _p6_lock:
         if _p6_triggered:
             return
         _p6_triggered = True
-    logging.info('P6: Starting parallel prefetch of all 3 PuLID models')
+    _p6_start = _p6_time.time()
+    logging.info('P6: Starting parallel prefetch of ALL 6 model loaders')
     pool = _p6_get_pool()
+    # PuLID loaders
     _p6_futures['pulid'] = pool.submit(
         _p6_orig_load_model, PulidFluxModelLoader(), pulid_file)
     _p6_futures['insightface'] = pool.submit(
         _p6_orig_load_insightface, PulidFluxInsightFaceLoader(), provider)
     _p6_futures['eva_clip'] = pool.submit(
         _p6_orig_load_eva_clip, PulidFluxEvaClipLoader())
+    # Standard ComfyUI loaders
+    if _p6_orig_load_unet:
+        _p6_futures['unet'] = pool.submit(
+            _p6_orig_load_unet, _p6_UNETLoader(), unet_name, weight_dtype)
+    if _p6_orig_load_clip:
+        _p6_futures['clip'] = pool.submit(
+            _p6_orig_load_clip, _p6_DualCLIPLoader(), clip_name1, clip_name2, clip_type, clip_device)
+    if _p6_orig_load_vae:
+        _p6_futures['vae'] = pool.submit(
+            _p6_orig_load_vae, _p6_VAELoader(), vae_name)
+    logging.info(f'P6: All 6 loaders submitted to thread pool in {_p6_time.time()-_p6_start:.2f}s')
 
 def _p6_wait(key):
     """Wait for a specific prefetch to complete and cache the result."""
@@ -146,12 +174,14 @@ def _p6_wait(key):
         if key in _p6_cache:
             logging.info(f'P6: {key} from cache (instant)')
             return _p6_cache[key]
+    t0 = _p6_time.time()
     result = _p6_futures[key].result()
     with _p6_lock:
         _p6_cache[key] = result
-    logging.info(f'P6: {key} ready')
+    logging.info(f'P6: {key} ready (waited {_p6_time.time()-t0:.1f}s)')
     return result
 
+# PuLID loader wrappers
 def _p6_parallel_load_model(self, pulid_file):
     _p6_trigger_all(pulid_file=pulid_file)
     return _p6_wait('pulid')
@@ -164,10 +194,33 @@ def _p6_parallel_load_eva_clip(self):
     _p6_trigger_all()
     return _p6_wait('eva_clip')
 
+# Standard ComfyUI loader wrappers
+def _p6_parallel_load_unet(self, unet_name, weight_dtype):
+    _p6_trigger_all(unet_name=unet_name, weight_dtype=weight_dtype)
+    return _p6_wait('unet')
+
+def _p6_parallel_load_clip(self, clip_name1, clip_name2, type, device='default'):
+    _p6_trigger_all(clip_name1=clip_name1, clip_name2=clip_name2, clip_type=type, clip_device=device)
+    return _p6_wait('clip')
+
+def _p6_parallel_load_vae(self, vae_name):
+    _p6_trigger_all(vae_name=vae_name)
+    return _p6_wait('vae')
+
+# Apply monkey-patches
 PulidFluxModelLoader.load_model = _p6_parallel_load_model
 PulidFluxInsightFaceLoader.load_insightface = _p6_parallel_load_insightface
 PulidFluxEvaClipLoader.load_eva_clip = _p6_parallel_load_eva_clip
-logging.info('P6: Parallel prefetch monkey-patches applied')
+if _p6_UNETLoader and _p6_orig_load_unet:
+    _p6_UNETLoader.load_unet = _p6_parallel_load_unet
+    logging.info('P6: Patched UNETLoader')
+if _p6_DualCLIPLoader and _p6_orig_load_clip:
+    _p6_DualCLIPLoader.load_clip = _p6_parallel_load_clip
+    logging.info('P6: Patched DualCLIPLoader')
+if _p6_VAELoader and _p6_orig_load_vae:
+    _p6_VAELoader.load_vae = _p6_parallel_load_vae
+    logging.info('P6: Patched VAELoader')
+logging.info('P6: All 6 parallel prefetch monkey-patches applied')
 # ── End P6 ────────────────────────────────────────────────────────────────────
 PARALLEL_PATCH
 
