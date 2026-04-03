@@ -118,16 +118,15 @@ RUN --mount=type=cache,target=/root/.cache \
         --relative-path models/facerestore_models --filename GFPGANv1.4.pth
 
 # BiRefNet RMBG (background removal)
+# Small text files use wget (comfy model download fails on chunked transfers)
+RUN mkdir -p /comfyui/models/RMBG/BiRefNet && \
+    wget -q -O /comfyui/models/RMBG/BiRefNet/birefnet.py \
+        "https://huggingface.co/1038lab/BiRefNet/raw/main/birefnet.py" && \
+    wget -q -O /comfyui/models/RMBG/BiRefNet/BiRefNet_config.py \
+        "https://huggingface.co/1038lab/BiRefNet/raw/main/BiRefNet_config.py" && \
+    wget -q -O /comfyui/models/RMBG/BiRefNet/config.json \
+        "https://huggingface.co/1038lab/BiRefNet/resolve/main/config.json"
 RUN --mount=type=cache,target=/root/.cache \
-    comfy model download \
-        --url https://huggingface.co/1038lab/BiRefNet/raw/main/birefnet.py \
-        --relative-path models/RMBG/BiRefNet --filename birefnet.py && \
-    comfy model download \
-        --url https://huggingface.co/1038lab/BiRefNet/raw/main/BiRefNet_config.py \
-        --relative-path models/RMBG/BiRefNet --filename BiRefNet_config.py && \
-    comfy model download \
-        --url https://huggingface.co/1038lab/BiRefNet/resolve/main/config.json \
-        --relative-path models/RMBG/BiRefNet --filename config.json && \
     comfy model download \
         --url https://huggingface.co/1038lab/BiRefNet/resolve/main/BiRefNet-HR.safetensors \
         --relative-path models/RMBG/BiRefNet --filename BiRefNet-general.safetensors
