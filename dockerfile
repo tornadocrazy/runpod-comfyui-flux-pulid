@@ -27,8 +27,11 @@ RUN pip install --no-cache-dir \
 # ─────────────────────────────────────────────────────────────────────────────
 RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II && \
-    git clone --depth 1 https://github.com/kijai/ComfyUI-KJNodes \
+    git clone https://github.com/kijai/ComfyUI-KJNodes \
         /comfyui/custom_nodes/ComfyUI-KJNodes && \
+    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
+    git checkout e64b67b8f4aa3a555cec61cf18ee7d1cfbb3e5f0 && \
+    cd /comfyui && \
     git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts \
         /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
     git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
