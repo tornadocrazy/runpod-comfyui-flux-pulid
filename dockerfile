@@ -41,7 +41,7 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     git submodule update --init --recursive && \
-    python install.py && \
+    python install.py || echo "Impact-Pack install.py failed, continuing to pip requirements" && \
     pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
