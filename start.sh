@@ -14,6 +14,12 @@ echo "worker-comfyui: Starting ComfyUI"
 : "${COMFY_LOG_LEVEL:=DEBUG}"
 : "${COMFY_EXTRA_ARGS:=--highvram}"
 
+# ── P4: Parallel warmup — pre-load all models into VRAM concurrently ──
+# This runs BEFORE ComfyUI starts, so models are in OS page cache / GPU memory.
+# When ComfyUI later loads them, it hits warm cache instead of cold disk.
+echo "worker-comfyui: Running parallel model warmup..."
+python -u /warmup_models.py || echo "worker-comfyui: Warmup failed (non-fatal, continuing)"
+
 if [ "$SERVE_API_LOCALLY" == "true" ]; then
     python -u /comfyui/main.py --disable-auto-launch --disable-metadata --listen --verbose "${COMFY_LOG_LEVEL}" --log-stdout ${COMFY_EXTRA_ARGS} &
 

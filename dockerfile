@@ -79,11 +79,19 @@ RUN --mount=type=cache,target=/root/.cache \
         --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors \
         --relative-path models/clip --filename t5xxl_fp8_e4m3fn.safetensors
 
-# EVA-CLIP (~4 GB)
+# EVA-CLIP (~817 MB .pt) — downloaded then converted to visual-only safetensors at build time
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_L_336_psz14_s6B.pt \
         --relative-path models/clip --filename EVA02_CLIP_L_336_psz14_s6B.pt
+
+# P1: Convert EVA-CLIP .pt (pickle) -> visual-only .safetensors (10-15s faster cold start)
+COPY convert_eva_clip.py /tmp/convert_eva_clip.py
+RUN python3 /tmp/convert_eva_clip.py \
+        /comfyui/models/clip/EVA02_CLIP_L_336_psz14_s6B.pt \
+        /comfyui/models/clip/EVA02_CLIP_L_336_visual.safetensors && \
+    rm /comfyui/models/clip/EVA02_CLIP_L_336_psz14_s6B.pt && \
+    rm /tmp/convert_eva_clip.py
 
 # facexlib weights
 RUN --mount=type=cache,target=/root/.cache \
@@ -100,6 +108,13 @@ RUN --mount=type=cache,target=/root/.cache \
         --url https://huggingface.co/kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors \
         --relative-path models/diffusion_models --filename flux1-dev-fp8.safetensors
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Patches — P1/P2/P3/P5: optimize PuLID cold-start loading
+# ─────────────────────────────────────────────────────────────────────────────
+COPY patch_pulid.sh /tmp/patch_pulid.sh
+RUN chmod +x /tmp/patch_pulid.sh && /tmp/patch_pulid.sh && rm /tmp/patch_pulid.sh
+
+COPY warmup_models.py /warmup_models.py
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
