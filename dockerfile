@@ -99,14 +99,19 @@ RUN python3 /tmp/convert_eva_clip.py \
     rm /comfyui/models/clip/EVA02_CLIP_L_336_psz14_s6B.pt && \
     rm /tmp/convert_eva_clip.py
 
-# facexlib weights
+# facexlib + GFPGAN face detection weights
+# GFPGAN (used by ReActor) looks in models/facedetection/, not models/facexlib/
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth \
         --relative-path models/facexlib --filename detection_Resnet50_Final.pth && \
     comfy model download \
         --url https://github.com/xinntao/facexlib/releases/download/v0.2.0/parsing_bisenet.pth \
-        --relative-path models/facexlib --filename parsing_bisenet.pth
+        --relative-path models/facexlib --filename parsing_bisenet.pth && \
+    mkdir -p /comfyui/models/facedetection && \
+    cp /comfyui/models/facexlib/detection_Resnet50_Final.pth /comfyui/models/facedetection/ && \
+    wget -q -O /comfyui/models/facedetection/parsing_parsenet.pth \
+        "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/parsing_parsenet.pth"
 
 # ReActor: inswapper face swap model + face restoration
 RUN --mount=type=cache,target=/root/.cache \
@@ -117,19 +122,19 @@ RUN --mount=type=cache,target=/root/.cache \
         --url https://huggingface.co/gmk123/GFPGAN/resolve/main/GFPGANv1.4.pth \
         --relative-path models/facerestore_models --filename GFPGANv1.4.pth
 
-# BiRefNet RMBG (background removal)
-# Small text files use wget (comfy model download fails on chunked transfers)
-RUN mkdir -p /comfyui/models/RMBG/BiRefNet && \
-    wget -q -O /comfyui/models/RMBG/BiRefNet/birefnet.py \
-        "https://huggingface.co/1038lab/BiRefNet/raw/main/birefnet.py" && \
-    wget -q -O /comfyui/models/RMBG/BiRefNet/BiRefNet_config.py \
-        "https://huggingface.co/1038lab/BiRefNet/raw/main/BiRefNet_config.py" && \
-    wget -q -O /comfyui/models/RMBG/BiRefNet/config.json \
-        "https://huggingface.co/1038lab/BiRefNet/resolve/main/config.json"
+# RMBG-2.0 (background removal) — node downloads to models/RMBG/RMBG-2.0/ at runtime
+# Pre-bake all files so no runtime downloads needed
+RUN mkdir -p /comfyui/models/RMBG/RMBG-2.0 && \
+    wget -q -O /comfyui/models/RMBG/RMBG-2.0/birefnet.py \
+        "https://huggingface.co/1038lab/RMBG-2.0/raw/main/birefnet.py" && \
+    wget -q -O /comfyui/models/RMBG/RMBG-2.0/BiRefNet_config.py \
+        "https://huggingface.co/1038lab/RMBG-2.0/raw/main/BiRefNet_config.py" && \
+    wget -q -O /comfyui/models/RMBG/RMBG-2.0/config.json \
+        "https://huggingface.co/1038lab/RMBG-2.0/resolve/main/config.json"
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
-        --url https://huggingface.co/1038lab/BiRefNet/resolve/main/BiRefNet-HR.safetensors \
-        --relative-path models/RMBG/BiRefNet --filename BiRefNet-general.safetensors
+        --url https://huggingface.co/1038lab/RMBG-2.0/resolve/main/model.safetensors \
+        --relative-path models/RMBG/RMBG-2.0 --filename model.safetensors
 
 # flux1-dev-fp8 (~11 GB)
 RUN --mount=type=cache,target=/root/.cache \
