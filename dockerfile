@@ -49,6 +49,8 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
         hydra-core \
         omegaconf \
+        "antlr4-python3-runtime==4.9.3" \
+        "iopath>=0.1.10" \
         piexif \
         facenet-pytorch --no-deps && \
     pip uninstall -y onnxruntime && \
@@ -78,7 +80,7 @@ RUN --mount=type=cache,target=/root/.cache \
     unzip /comfyui/models/insightface/models/buffalo_l.zip \
           -d /comfyui/models/insightface/models/buffalo_l && \
     unzip /comfyui/models/insightface/models/antelopev2.zip \
-          -d /comfyui/models/insightface/models/antelopev2 && \
+          -d /comfyui/models/insightface/models && \
     rm /comfyui/models/insightface/models/buffalo_l.zip \
        /comfyui/models/insightface/models/antelopev2.zip
 
