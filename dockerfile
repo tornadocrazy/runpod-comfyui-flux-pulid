@@ -17,7 +17,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir \
     https://huggingface.co/iwr-redmond/linux-wheels/resolve/main/insightface-0.7.3-cp312-cp312-linux_x86_64.whl \
     onnxruntime-gpu==1.20.0 \
-    "transformers>=4.49.0" \
+    transformers>=4.49.0 \
     facexlib \
     timm \
     einops
@@ -27,11 +27,8 @@ RUN pip install --no-cache-dir \
 # ─────────────────────────────────────────────────────────────────────────────
 RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II && \
-    git clone https://github.com/kijai/ComfyUI-KJNodes \
+    git clone --depth 1 https://github.com/kijai/ComfyUI-KJNodes \
         /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    cd /comfyui/custom_nodes/ComfyUI-KJNodes && \
-    git checkout e64b67b8f4aa3a555cec61cf18ee7d1cfbb3e5f0 && \
-    cd /comfyui && \
     git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts \
         /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
     git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
@@ -40,13 +37,13 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
     git submodule update --init --recursive && \
-    (python install.py || true) && \
+    python install.py && \
     pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
-        hydra-core \
+        piexif \
         facenet-pytorch --no-deps
 
 # ─────────────────────────────────────────────────────────────────────────────
