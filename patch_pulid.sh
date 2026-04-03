@@ -60,11 +60,19 @@ new_method = '''    def load_eva_clip(self):
             model = _build_vision_tower(model_cfg['embed_dim'], model_cfg['vision_cfg'])
             state_dict = _st_load(visual_safetensors, device='cpu')
 
-            # Handle positional embedding resize if needed
+            # resize_eva_pos_embed expects model.visual but we ARE the visual tower
+            class _W: pass
+            _w = _W()
+            _w.visual = model
             from .eva_clip.utils import resize_eva_pos_embed
-            resize_eva_pos_embed(state_dict, model)
+            resize_eva_pos_embed(state_dict, _w)
 
             model.load_state_dict(state_dict, strict=False)
+
+            # Set image_mean/image_std (normally set by create_model_and_transforms)
+            from .eva_clip.constants import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
+            model.image_mean = OPENAI_DATASET_MEAN
+            model.image_std = OPENAI_DATASET_STD
         else:
             logging.info(f'No pre-converted safetensors found, using standard (slow) path')
             model, _, _ = create_model_and_transforms('EVA02-CLIP-L-14-336', 'eva_clip', force_custom_clip=True, local_dir=clip_dir)
