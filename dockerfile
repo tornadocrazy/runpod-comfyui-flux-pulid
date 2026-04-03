@@ -46,22 +46,14 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         facenet-pytorch --no-deps
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Models — all downloads in one layer with HF cache mount
-# clip_l, t5xxl_fp8 (was fp16 — saves ~4.6 GB), EVA-CLIP, flux1-dev-fp8, ae (VAE), pulid, buffalo_l
+# Models — split into separate layers so Docker caches each independently
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Small models (~250 MB + ~300 MB)
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors \
         --relative-path models/clip --filename clip_l.safetensors && \
-    comfy model download \
-        --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors \
-        --relative-path models/clip --filename t5xxl_fp8_e4m3fn.safetensors && \
-    comfy model download \
-        --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_E_psz14_s4B.pt \
-        --relative-path models/clip --filename EVA02_CLIP_E_psz14_s4B.pt && \
-    comfy model download \
-        --url https://huggingface.co/kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors \
-        --relative-path models/diffusion_models --filename flux1-dev-fp8.safetensors && \
     comfy model download \
         --url https://huggingface.co/lovis93/testllm/resolve/ed9cf1af7465cebca4649157f118e331cf2a084f/ae.safetensors \
         --relative-path models/vae --filename ae.safetensors && \
@@ -74,6 +66,24 @@ RUN --mount=type=cache,target=/root/.cache \
     unzip /comfyui/models/insightface/models/buffalo_l.zip \
           -d /comfyui/models/insightface/models/buffalo_l && \
     rm /comfyui/models/insightface/models/buffalo_l.zip
+
+# t5xxl_fp8 (~4.5 GB)
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors \
+        --relative-path models/clip --filename t5xxl_fp8_e4m3fn.safetensors
+
+# EVA-CLIP (~4 GB)
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_E_psz14_s4B.pt \
+        --relative-path models/clip --filename EVA02_CLIP_E_psz14_s4B.pt
+
+# flux1-dev-fp8 (~11 GB)
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://huggingface.co/kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors \
+        --relative-path models/diffusion_models --filename flux1-dev-fp8.safetensors
 
 # OPTION B — full bf16  (uncomment to activate, comment out fp8 download above)
 # ARG HF_TOKEN
