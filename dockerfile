@@ -45,6 +45,12 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
     pip uninstall -y onnxruntime && \
     pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
 
+# ReActor (face swap) + RMBG (background removal)
+RUN comfy-node-install comfyui-reactor comfyui-rmbg
+
+# Bypass ReActor NSFW filter (downloads large classifier model otherwise)
+COPY reactor_sfw.py /comfyui/custom_nodes/comfyui-reactor/scripts/reactor_sfw.py
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — split into separate layers so Docker caches each independently
 # ─────────────────────────────────────────────────────────────────────────────
@@ -101,6 +107,30 @@ RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://github.com/xinntao/facexlib/releases/download/v0.2.0/parsing_bisenet.pth \
         --relative-path models/facexlib --filename parsing_bisenet.pth
+
+# ReActor: inswapper face swap model + face restoration
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://huggingface.co/ezioruan/inswapper_128.onnx/resolve/main/inswapper_128.onnx \
+        --relative-path models/insightface --filename inswapper_128.onnx && \
+    comfy model download \
+        --url https://huggingface.co/gmk123/GFPGAN/resolve/main/GFPGANv1.4.pth \
+        --relative-path models/facerestore_models --filename GFPGANv1.4.pth
+
+# BiRefNet RMBG (background removal)
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://huggingface.co/1038lab/BiRefNet/raw/main/birefnet.py \
+        --relative-path models/RMBG/BiRefNet --filename birefnet.py && \
+    comfy model download \
+        --url https://huggingface.co/1038lab/BiRefNet/raw/main/BiRefNet_config.py \
+        --relative-path models/RMBG/BiRefNet --filename BiRefNet_config.py && \
+    comfy model download \
+        --url https://huggingface.co/1038lab/BiRefNet/resolve/main/config.json \
+        --relative-path models/RMBG/BiRefNet --filename config.json && \
+    comfy model download \
+        --url https://huggingface.co/1038lab/BiRefNet/resolve/main/BiRefNet-HR.safetensors \
+        --relative-path models/RMBG/BiRefNet --filename BiRefNet-general.safetensors
 
 # flux1-dev-fp8 (~11 GB)
 RUN --mount=type=cache,target=/root/.cache \
