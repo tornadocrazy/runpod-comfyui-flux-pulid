@@ -37,21 +37,10 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
     git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
         /comfyui/custom_nodes/ComfyUI-Florence2 && \
-    git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Impact-Pack \
-        /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
-    cd /comfyui/custom_nodes/ComfyUI-Impact-Pack && \
-    git submodule update --init --recursive && \
-    python install.py || echo "Impact-Pack install.py failed, continuing to pip requirements" && \
     pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
-        -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
-        hydra-core \
-        omegaconf \
-        "antlr4-python3-runtime==4.9.3" \
-        "iopath>=0.1.10" \
-        piexif \
         facenet-pytorch --no-deps && \
     pip uninstall -y onnxruntime && \
     pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
@@ -93,14 +82,26 @@ RUN --mount=type=cache,target=/root/.cache \
 # EVA-CLIP (~4 GB)
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
-        --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_E_psz14_s4B.pt \
-        --relative-path models/clip --filename EVA02_CLIP_E_psz14_s4B.pt
+        --url https://huggingface.co/QuanSun/EVA-CLIP/resolve/main/EVA02_CLIP_L_336_psz14_s6B.pt \
+        --relative-path models/clip --filename EVA02_CLIP_L_336_psz14_s6B.pt
+
+# facexlib weights
+RUN --mount=type=cache,target=/root/.cache \
+    comfy model download \
+        --url https://github.com/xinntao/facexlib/releases/download/v0.1.0/detection_Resnet50_Final.pth \
+        --relative-path models/facexlib --filename detection_Resnet50_Final.pth && \
+    comfy model download \
+        --url https://github.com/xinntao/facexlib/releases/download/v0.2.0/parsing_bisenet.pth \
+        --relative-path models/facexlib --filename parsing_bisenet.pth
 
 # flux1-dev-fp8 (~11 GB)
 RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://huggingface.co/kijai/flux-fp8/resolve/main/flux1-dev-fp8.safetensors \
         --relative-path models/diffusion_models --filename flux1-dev-fp8.safetensors
+
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 # OPTION B — full bf16  (uncomment to activate, comment out fp8 download above)
 # ARG HF_TOKEN
