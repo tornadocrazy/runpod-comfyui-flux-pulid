@@ -17,7 +17,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir \
     https://huggingface.co/iwr-redmond/linux-wheels/resolve/main/insightface-0.7.3-cp312-cp312-linux_x86_64.whl \
     onnxruntime-gpu==1.20.0 \
-    transformers>=4.49.0 \
+    "transformers>=4.49.0" \
     facexlib \
     timm \
     einops
@@ -48,8 +48,11 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Impact-Pack/requirements.txt \
         hydra-core \
+        omegaconf \
         piexif \
-        facenet-pytorch --no-deps
+        facenet-pytorch --no-deps && \
+    pip uninstall -y onnxruntime && \
+    pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — split into separate layers so Docker caches each independently
@@ -69,9 +72,15 @@ RUN --mount=type=cache,target=/root/.cache \
     comfy model download \
         --url https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip \
         --relative-path models/insightface/models --filename buffalo_l.zip && \
+    comfy model download \
+        --url https://github.com/deepinsight/insightface/releases/download/v0.7/antelopev2.zip \
+        --relative-path models/insightface/models --filename antelopev2.zip && \
     unzip /comfyui/models/insightface/models/buffalo_l.zip \
           -d /comfyui/models/insightface/models/buffalo_l && \
-    rm /comfyui/models/insightface/models/buffalo_l.zip
+    unzip /comfyui/models/insightface/models/antelopev2.zip \
+          -d /comfyui/models/insightface/models/antelopev2 && \
+    rm /comfyui/models/insightface/models/buffalo_l.zip \
+       /comfyui/models/insightface/models/antelopev2.zip
 
 # t5xxl_fp8 (~4.5 GB)
 RUN --mount=type=cache,target=/root/.cache \
