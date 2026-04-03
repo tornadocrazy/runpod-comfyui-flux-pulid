@@ -95,4 +95,80 @@ sed -i "s|model = FaceAnalysis(name=name, root=INSIGHTFACE_DIR, providers=\[prov
 # ─────────────────────────────────────────────────────────────────────────────
 sed -i 's|^from facenet_pytorch import MTCNN, InceptionResnetV1|# Deferred: from facenet_pytorch import MTCNN, InceptionResnetV1  # moved to lazy import|' "$PULID_DIR/pulidflux.py"
 
-echo "[patch_pulid] All patches applied successfully"
+# ─────────────────────────────────────────────────────────────────────────────
+# P6: Parallel prefetch — first loader to execute triggers all 3 in threads
+# ─────────────────────────────────────────────────────────────────────────────
+# Appends code to pulidflux.py that wraps the 3 loader methods.
+# When ComfyUI calls any loader, it kicks off all 3 loads in parallel threads,
+# then waits only on its own. Total load time = max(individual) not sum.
+cat >> "$PULID_DIR/pulidflux.py" << 'PARALLEL_PATCH'
+
+# ── P6: Parallel model prefetch ──────────────────────────────────────────────
+import threading as _p6_threading
+from concurrent.futures import ThreadPoolExecutor as _p6_TPE
+
+_p6_lock = _p6_threading.Lock()
+_p6_futures = {}
+_p6_cache = {}
+_p6_triggered = False
+_p6_pool = None
+
+# Save the already-patched originals
+_p6_orig_load_model = PulidFluxModelLoader.load_model
+_p6_orig_load_insightface = PulidFluxInsightFaceLoader.load_insightface
+_p6_orig_load_eva_clip = PulidFluxEvaClipLoader.load_eva_clip
+
+def _p6_get_pool():
+    global _p6_pool
+    if _p6_pool is None:
+        _p6_pool = _p6_TPE(max_workers=3)
+    return _p6_pool
+
+def _p6_trigger_all(pulid_file='pulid_flux_v0.9.1.safetensors', provider='CUDA'):
+    """Kick off all 3 loads in parallel. Safe to call multiple times — only runs once."""
+    global _p6_triggered
+    with _p6_lock:
+        if _p6_triggered:
+            return
+        _p6_triggered = True
+    logging.info('P6: Starting parallel prefetch of all 3 PuLID models')
+    pool = _p6_get_pool()
+    _p6_futures['pulid'] = pool.submit(
+        _p6_orig_load_model, PulidFluxModelLoader(), pulid_file)
+    _p6_futures['insightface'] = pool.submit(
+        _p6_orig_load_insightface, PulidFluxInsightFaceLoader(), provider)
+    _p6_futures['eva_clip'] = pool.submit(
+        _p6_orig_load_eva_clip, PulidFluxEvaClipLoader())
+
+def _p6_wait(key):
+    """Wait for a specific prefetch to complete and cache the result."""
+    with _p6_lock:
+        if key in _p6_cache:
+            logging.info(f'P6: {key} from cache (instant)')
+            return _p6_cache[key]
+    result = _p6_futures[key].result()
+    with _p6_lock:
+        _p6_cache[key] = result
+    logging.info(f'P6: {key} ready')
+    return result
+
+def _p6_parallel_load_model(self, pulid_file):
+    _p6_trigger_all(pulid_file=pulid_file)
+    return _p6_wait('pulid')
+
+def _p6_parallel_load_insightface(self, provider):
+    _p6_trigger_all(provider=provider)
+    return _p6_wait('insightface')
+
+def _p6_parallel_load_eva_clip(self):
+    _p6_trigger_all()
+    return _p6_wait('eva_clip')
+
+PulidFluxModelLoader.load_model = _p6_parallel_load_model
+PulidFluxInsightFaceLoader.load_insightface = _p6_parallel_load_insightface
+PulidFluxEvaClipLoader.load_eva_clip = _p6_parallel_load_eva_clip
+logging.info('P6: Parallel prefetch monkey-patches applied')
+# ── End P6 ────────────────────────────────────────────────────────────────────
+PARALLEL_PATCH
+
+echo "[patch_pulid] All patches applied successfully (including P6 parallel prefetch)"
