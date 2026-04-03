@@ -17,7 +17,7 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir \
     https://huggingface.co/iwr-redmond/linux-wheels/resolve/main/insightface-0.7.3-cp312-cp312-linux_x86_64.whl \
     onnxruntime-gpu==1.20.0 \
-    transformers>=4.49.0 \
+    "transformers>=4.49.0" \
     facexlib \
     timm \
     einops
