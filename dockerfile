@@ -153,6 +153,9 @@ RUN --mount=type=cache,target=/root/.cache \
 COPY patch_pulid.sh /tmp/patch_pulid.sh
 RUN chmod +x /tmp/patch_pulid.sh && /tmp/patch_pulid.sh && rm /tmp/patch_pulid.sh
 
+# Pre-generate matplotlib font cache (avoids ~0.5s rebuild on every cold start)
+RUN python3 -c "import matplotlib; matplotlib.font_manager.FontManager()"
+
 COPY warmup_models.py /warmup_models.py
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
