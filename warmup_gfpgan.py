@@ -14,6 +14,10 @@ t0 = time.time()
 
 try:
     import torch
+    # Patch: torchvision removed functional_tensor in v0.18+; facexlib still imports it
+    import torchvision.transforms.functional as _tvf
+    import sys
+    sys.modules.setdefault('torchvision.transforms.functional_tensor', _tvf)
     from gfpgan import GFPGANer
 
     # Load GFPGAN with same config ReActor uses
