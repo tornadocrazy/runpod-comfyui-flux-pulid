@@ -33,14 +33,9 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
     git fetch --depth 1 origin e64b67b8f4aa3a555cec61cf18ee7d1cfbb3e5f0 && \
     git checkout FETCH_HEAD && \
     cd /comfyui && \
-    git clone --depth 1 https://github.com/pythongosssss/ComfyUI-Custom-Scripts \
-        /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    git clone --depth 1 https://github.com/kijai/ComfyUI-Florence2 \
-        /comfyui/custom_nodes/ComfyUI-Florence2 && \
     pip install --no-cache-dir \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
-        -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
         facenet-pytorch --no-deps
 
 # ReActor (face swap) + RMBG (background removal)
@@ -51,10 +46,8 @@ RUN comfy-node-install comfyui-reactor comfyui-rmbg && \
 # Bypass ReActor NSFW filter (downloads large classifier model otherwise)
 COPY reactor_sfw.py /comfyui/custom_nodes/comfyui-reactor/scripts/reactor_sfw.py
 
-# Remove unused nodes to speed up startup (~2s saved)
-RUN rm -rf /comfyui/comfy_api_nodes && \
-    rm -rf /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
-    rm -rf /comfyui/custom_nodes/ComfyUI-Florence2
+# Remove unused nodes to speed up startup
+RUN rm -rf /comfyui/comfy_api_nodes
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — split into separate layers so Docker caches each independently
