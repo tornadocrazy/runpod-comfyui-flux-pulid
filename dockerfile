@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir \
     onnxruntime-gpu==1.20.0 \
     "transformers>=4.49.0" \
     facexlib \
+    gfpgan \
     timm \
     einops
 
