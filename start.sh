@@ -22,9 +22,11 @@ if [ "$SERVE_API_LOCALLY" == "true" ]; then
 else
     python -u /comfyui/main.py --disable-auto-launch --disable-metadata --verbose "${COMFY_LOG_LEVEL}" --log-stdout ${COMFY_EXTRA_ARGS} &
 
-    # P6: No separate warmup needed — parallel prefetch is built into the loader
-    # nodes via patch_pulid.sh P6. First workflow triggers all 3 model loads in
-    # parallel threads. Subsequent workflows hit ComfyUI's cache.
+    # Pre-warm OS page cache for large models in background.
+    # UNET (11GB) takes ~11s to read from disk. By starting this at boot,
+    # it's already in RAM when P6 triggers on first request.
+    cat /comfyui/models/diffusion_models/flux1-dev-fp8.safetensors > /dev/null &
+    cat /comfyui/models/clip/t5xxl_fp8_e4m3fn.safetensors > /dev/null &
 
     echo "worker-comfyui: Starting RunPod Handler"
     python -u /handler.py
