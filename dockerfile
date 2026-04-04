@@ -46,10 +46,17 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
     pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
 
 # ReActor (face swap) + RMBG (background removal)
-RUN comfy-node-install comfyui-reactor comfyui-rmbg
+RUN comfy-node-install comfyui-reactor comfyui-rmbg && \
+    pip uninstall -y onnxruntime && \
+    pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
 
 # Bypass ReActor NSFW filter (downloads large classifier model otherwise)
 COPY reactor_sfw.py /comfyui/custom_nodes/comfyui-reactor/scripts/reactor_sfw.py
+
+# Remove unused nodes to speed up startup (~2s saved)
+RUN rm -rf /comfyui/comfy_api_nodes && \
+    rm -rf /comfyui/custom_nodes/ComfyUI-Custom-Scripts && \
+    rm -rf /comfyui/custom_nodes/ComfyUI-Florence2
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Models — split into separate layers so Docker caches each independently
