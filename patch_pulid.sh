@@ -168,6 +168,14 @@ def _p6_trigger_all(pulid_file='pulid_flux_v0.9.1.safetensors', provider='CUDA',
             _p6_orig_load_vae, _p6_VAELoader(), vae_name)
     logging.info(f'P6: All 6 loaders submitted to thread pool in {_p6_time.time()-_p6_start:.2f}s')
 
+def _p6_cleanup():
+    """Release futures and shut down pool after all loads complete."""
+    global _p6_pool
+    _p6_futures.clear()
+    if _p6_pool is not None:
+        _p6_pool.shutdown(wait=False)
+        _p6_pool = None
+
 def _p6_wait(key):
     """Wait for a specific prefetch to complete and cache the result."""
     with _p6_lock:
@@ -178,6 +186,9 @@ def _p6_wait(key):
     result = _p6_futures[key].result()
     with _p6_lock:
         _p6_cache[key] = result
+        # Clean up once all 6 loaders have been consumed
+        if len(_p6_cache) >= 6:
+            _p6_cleanup()
     logging.info(f'P6: {key} ready (waited {_p6_time.time()-t0:.1f}s)')
     return result
 
