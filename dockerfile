@@ -41,9 +41,7 @@ RUN git clone --depth 1 https://github.com/lldacing/ComfyUI_PuLID_Flux_ll \
         -r /comfyui/custom_nodes/ComfyUI-PuLID_Flux_II/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-KJNodes/requirements.txt \
         -r /comfyui/custom_nodes/ComfyUI-Florence2/requirements.txt \
-        facenet-pytorch --no-deps && \
-    pip uninstall -y onnxruntime && \
-    pip install --no-cache-dir --force-reinstall onnxruntime-gpu==1.20.0
+        facenet-pytorch --no-deps
 
 # ReActor (face swap) + RMBG (background removal)
 RUN comfy-node-install comfyui-reactor comfyui-rmbg && \
